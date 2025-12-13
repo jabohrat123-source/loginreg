@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logout</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    padding:20px;
+}
+.box {
+    max-width:400px;
+    width:100%;
+    background:white;
+    padding:40px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3);
+    animation:slideIn 0.4s ease-out;
+}
+@keyframes slideIn {
+    from { opacity:0; transform:translateY(20px); }
+    to { opacity:1; transform:translateY(0); }
+}
+h2 { 
+    color:#333;
+    margin-top:0;
+    margin-bottom:20px;
+    font-size:28px;
+    font-weight:600;
+}
+.loading { 
+    color:#666;
+    font-size:15px;
+    margin:15px 0;
+}
+.message { 
+    margin-top:20px;
+    color:#27ae60;
+    font-weight:600;
+    font-size:15px;
+    min-height:20px;
+}
+.button-group {
+    display:flex;
+    gap:12px;
+    margin-top:30px;
+}
+button {
+    flex:1;
+    padding:14px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:15px;
+    font-weight:600;
+    transition:all 0.3s ease;
+}
+.logout-btn {
+    background:linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color:white;
+}
+.logout-btn:hover {
+    transform:translateY(-2px);
+    box-shadow:0 10px 25px rgba(231, 76, 60, 0.4);
+}
+.cancel-btn {
+    background:#e0e0e0;
+    color:#333;
+}
+.cancel-btn:hover {
+    background:#d0d0d0;
+    transform:translateY(-2px);
+}
+button:active {
+    transform:translateY(0);
+}
+button:disabled {
+    opacity:0.6;
+    cursor:not-allowed;
+}
+.hidden {
+    display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+    <!-- Confirmation prompt -->
+    <div id="confirmBox">
+        <h2>Logout</h2>
+        <p class="loading">Are you sure you want to logout?</p>
+        <div class="button-group">
+            <button class="logout-btn" onclick="confirmLogout()">Yes, Logout</button>
+            <button class="cancel-btn" onclick="cancelLogout()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Processing state -->
+    <div id="processingBox" class="hidden">
+        <h2>Logging out...</h2>
+        <p class="loading">Please wait while we sign you out.</p>
+        <p class="message" id="message"></p>
+    </div>
+</div>
+
+<script>
+// ===== Supabase Setup =====
+const SUPABASE_URL = "https://vjhoahthcaojzharxbzh.supabase.co";    
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6d2NhYm12YmZnbnd2a3Jpc2t3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2MTEyODcsImV4cCI6MjA4MTE4NzI4N30.IjYgkCoBBAVMexpxtCYW3TltE0IfxrXftUzI9M2TiLM
+"; 
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Cancel logout
+function cancelLogout(){
+    window.history.back();
+}
+
+// Confirm logout
+async function confirmLogout(){
+    // Show processing state
+    document.getElementById("confirmBox").classList.add("hidden");
+    document.getElementById("processingBox").classList.remove("hidden");
+
+    // Always redirect after a short timeout as a fallback
+    const FALLBACK_REDIRECT = "https://mariyarojerlmaquilan-droid.github.io/sijuana/";
+    // mark to skip auto-redirect on index page (one-time)
+    try{ localStorage.setItem('skip_auto_redirect','1'); }catch(e){}
+    const redirectTimeout = setTimeout(() => {
+        // best-effort localStorage cleanup before redirect
+        try { localStorage.removeItem('supabase.auth.token'); } catch(e){}
+        try { localStorage.removeItem('sb:token'); } catch(e){}
+        window.top.location.href = FALLBACK_REDIRECT;
+    }, 2000);
+
+    try {
+        const {error} = await supabaseClient.auth.signOut();
+
+        // Regardless of signOut result, remove Supabase token keys (best-effort)
+        try { localStorage.removeItem('supabase.auth.token'); } catch(e){}
+        try { localStorage.removeItem('sb:token'); } catch(e){}
+
+        if(error) {
+            document.getElementById("message").innerText = "Logging out...";
+            console.error("Logout error:", error.message);
+            // Let the fallback redirect run
+            return;
+        }
+
+        document.getElementById("message").innerText = "Successfully logged out!";
+        clearTimeout(redirectTimeout);
+
+        // Redirect immediately on success (skip auto-redirect on index)
+        try{ localStorage.setItem('skip_auto_redirect','1'); }catch(e){}
+        setTimeout(() => {
+            window.top.location.href = FALLBACK_REDIRECT;
+        }, 800);
+    } catch(err) {
+        document.getElementById("message").innerText = "Redirecting...";
+        console.error("Unexpected error:", err);
+        // fallback redirect will still run
+    }
+}
+</script>
+
+</body>
+</html>
